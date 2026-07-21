@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Hollister Swell &mdash; Dashboard{% endblock %}
+{% block content %}
+
+<section class="buoy-panel">
+  {% if latest %}
+    <div class="buoy-readout">
+      <div class="buoy-stat">
+        <span class="buoy-value">{{ "%.1f"|format(latest["hs_ft"]) }}<small>ft</small></span>
+        <span class="buoy-label">Hs</span>
+      </div>
+      <div class="buoy-stat">
+        <span class="buoy-value">{{ "%.0f"|format(latest["tp_s"]) }}<small>s</small></span>
+        <span class="buoy-label">Peak period</span>
+      </div>
+      <div class="buoy-stat">
+        <span class="buoy-value">{{ "%.0f"|format(latest["dp_deg"]) }}<small>&deg;</small></span>
+        <span class="buoy-label">Direction</span>
+      </div>
+      <div class="buoy-stat">
+        <span class="buoy-value swell-type swell-{{ swell_type|lower }}">{{ swell_type }}</span>
+        <span class="buoy-label">Swell type</span>
+      </div>
+    </div>
+    <div class="buoy-meta">
+      <span class="{{ 'stale' if age_minutes and age_minutes > 90 else '' }}">
+        {% if age_minutes is not none %}
+          Updated {{ age_minutes }} min ago
+          {% if age_minutes > 90 %}&mdash; buoy feed may be stale{% endif %}
+        {% endif %}
+      </span>
+      <form method="post" action="/refresh">
+        <button type="submit" class="btn-refresh">Refresh now</button>
+      </form>
+    </div>
+  {% else %}
+    <p>No buoy data yet.</p>
+    <form method="post" action="/refresh"><button type="submit" class="btn-refresh">Fetch now</button></form>
+  {% endif %}
+</section>
+
+<section class="spot-grid">
+  {% for c in calls %}
+    <a class="spot-card call-{{ c.call|lower }}" href="/spots/{{ c.spot_slug }}">
+      <div class="spot-card-head">
+        <span class="spot-name">{{ c.spot_name }}</span>
+        <span class="call-badge call-{{ c.call|lower }}">{{ c.call.replace('_', ' ') }}</span>
+      </div>
+      <p class="spot-reasoning">{{ c.reasoning }}</p>
+      {% if c.tide_note %}<p class="spot-tide">{{ c.tide_note }}</p>{% endif %}
+      {% if c.confidence == "tbd" %}<span class="tbd-badge">unconfirmed rule</span>{% endif %}
+    </a>
+  {% endfor %}
+</section>
+
+{% endblock %}

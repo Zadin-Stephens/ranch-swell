@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ spot["name"] }} &mdash; Hollister Swell{% endblock %}
+{% block content %}
+
+<a class="back-link" href="/">&larr; All spots</a>
+<h1>{{ spot["name"] }}</h1>
+{% if spot["notes"] %}<p class="spot-notes">{{ spot["notes"] }}</p>{% endif %}
+
+{% if call %}
+  <div class="current-call call-{{ call.call|lower }}">
+    <span class="call-badge call-{{ call.call|lower }}">{{ call.call.replace('_', ' ') }}</span>
+    <p>{{ call.reasoning }}</p>
+    {% if call.tide_note %}<p class="spot-tide">{{ call.tide_note }}</p>{% endif %}
+    {% if age_minutes is not none %}<p class="buoy-meta-small">buoy reading {{ age_minutes }} min old</p>{% endif %}
+  </div>
+{% endif %}
+
+<h2>Rules on file</h2>
+{% if rules %}
+  <table class="rules-table">
+    <thead>
+      <tr><th>Swell</th><th>Direction</th><th>Period</th><th>Height</th><th>Tide</th><th>Confidence</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rules %}
+        <tr>
+          <td>{{ r["swell_type"] }}</td>
+          <td>
+            {% if r["swell_type"] == "NW" %}&le; {{ r["max_dir"]|int if r["max_dir"] else "-" }}&deg;
+            {% else %}&ge; {{ r["min_dir"]|int if r["min_dir"] else "-" }}&deg;{% endif %}
+          </td>
+          <td>
+            {{ r["min_period_s"]|int if r["min_period_s"] else "-" }}s+
+            {% if r["ideal_period_min_s"] %} (ideal {{ r["ideal_period_min_s"]|int }}-{{ r["ideal_period_max_s"]|int if r["ideal_period_max_s"] else "?" }}s){% endif %}
+          </td>
+          <td>{{ r["min_height_ft"] and (r["min_height_ft"]|string + " ft+") or "-" }}</td>
+          <td>{{ r["tide_pref"] }}</td>
+          <td class="confidence-{{ r['confidence'] }}">{{ r["confidence"] }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% for r in rules %}
+    {% if r["notes"] %}<p class="rule-note"><strong>{{ r["swell_type"] }}:</strong> {{ r["notes"] }}</p>{% endif %}
+  {% endfor %}
+{% else %}
+  <p class="spot-notes">No rules recorded for this spot yet &mdash; log observations below to start building them.</p>
+{% endif %}
+
+<h2>Log an observation</h2>
+<form class="observe-form" method="post" action="/spots/{{ spot['slug'] }}/observe">
+  <label>
+    Date/time
+    <input type="datetime-local" name="observed_at_local" value="{{ now }}" required>
+  </label>
+  <label>
+    Height (ft)
+    <input type="number" step="0.5" min="0" name="observed_height_ft" required>
+  </label>
+  <label>
+    Note
+    <input type="text" name="note" placeholder="optional">
+  </label>
+  <button type="submit">Log it</button>
+</form>
+
+<h2>Observation history</h2>
+{% if observations %}
+  <table class="obs-table">
+    <thead>
+      <tr><th>When</th><th>Height</th><th>Buoy Hs / Tp / Dp</th><th>Note</th></tr>
+    </thead>
+    <tbody>
+      {% for o in observations %}
+        <tr>
+          <td>{{ o["observed_at_local"] }}</td>
+          <td>{{ o["observed_height_ft"] }} ft</td>
+          <td>
+            {% if o["hs_ft"] is not none %}
+              {{ "%.1f"|format(o["hs_ft"]) }}ft / {{ "%.0f"|format(o["tp_s"]) }}s / {{ "%.0f"|format(o["dp_deg"]) }}&deg;
+            {% else %}&mdash;{% endif %}
+          </td>
+          <td>{{ o["note"] or "" }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="spot-notes">No observations logged yet for this spot.</p>
+{% endif %}
+
+{% endblock %}
