@@ -4,6 +4,9 @@
 
 <section class="buoy-panel">
   {% if latest %}
+    <div class="live-badge {{ 'is-stale' if age_minutes and age_minutes > 90 else '' }}">
+      <span class="live-dot"></span>{{ 'STALE' if age_minutes and age_minutes > 90 else 'LIVE' }}
+    </div>
     <div class="buoy-readout">
       <div class="buoy-stat">
         <span class="buoy-value">{{ "%.1f"|format(latest["hs_ft"]) }}<small>ft</small></span>
@@ -34,8 +37,10 @@
       </form>
     </div>
   {% else %}
-    <p>No buoy data yet.</p>
-    <form method="post" action="/refresh"><button type="submit" class="btn-refresh">Fetch now</button></form>
+    <div class="empty-panel">
+      <p>No buoy data yet.</p>
+      <form method="post" action="/refresh"><button type="submit" class="btn-refresh">Fetch now</button></form>
+    </div>
   {% endif %}
 </section>
 
@@ -46,6 +51,7 @@
         <span class="spot-name">{{ c.spot_name }}</span>
         <span class="call-badge call-{{ c.call|lower }}">{{ c.call.replace('_', ' ') }}</span>
       </div>
+      <div class="rating-bar"><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
       <p class="spot-reasoning">{{ c.reasoning }}</p>
       {% if c.tide_note %}<p class="spot-tide">{{ c.tide_note }}</p>{% endif %}
       {% if c.confidence == "tbd" %}<span class="tbd-badge">unconfirmed rule</span>{% endif %}

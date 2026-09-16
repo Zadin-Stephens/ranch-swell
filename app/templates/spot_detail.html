@@ -9,6 +9,7 @@
 {% if call %}
   <div class="current-call call-{{ call.call|lower }}">
     <span class="call-badge call-{{ call.call|lower }}">{{ call.call.replace('_', ' ') }}</span>
+    <div class="rating-bar"><span class="seg"></span><span class="seg"></span><span class="seg"></span><span class="seg"></span></div>
     <p>{{ call.reasoning }}</p>
     {% if call.tide_note %}<p class="spot-tide">{{ call.tide_note }}</p>{% endif %}
     {% if age_minutes is not none %}<p class="buoy-meta-small">buoy reading {{ age_minutes }} min old</p>{% endif %}
