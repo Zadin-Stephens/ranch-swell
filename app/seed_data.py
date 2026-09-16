@@ -193,6 +193,29 @@ SPOTS = [
             },
         ],
     },
+    {
+        "slug": "bulito",
+        "name": "Bulito",
+        "notes": "Added from the 2026-08-06 session. Flat that day when Auggies and Big "
+                 "Drakes were both showing about a foot -- no rules yet, needs more looks.",
+        "rules": [],
+    },
+    {
+        "slug": "auggies",
+        "name": "Auggies",
+        "notes": "Added from the 2026-08-06 session. Breaking at about a foot on a 12.5s "
+                 "S swell while Bulito was flat -- no rules yet, needs more looks.",
+        "rules": [],
+    },
+    {
+        "slug": "point-conception",
+        "name": "Point Conception",
+        "notes": "The headland itself, west of the Ranch proper -- kept as an exposure "
+                 "gauge rather than a spot to surf. On 2026-08-06 it held ~2ft while "
+                 "everything east of it was 1ft or flat, so it sets the ceiling: if the "
+                 "Point is small, the Ranch is smaller.",
+        "rules": [],
+    },
 ]
 
 

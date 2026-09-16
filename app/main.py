@@ -9,7 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app import cdip, db, rules, seed_data
+from app import cdip, db, field_log, rules, seed_data
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("hollister-swell")
@@ -41,6 +41,10 @@ async def lifespan(app: FastAPI):
     with db.get_conn() as conn:
         seed_data.seed(conn)
     await poll_buoy()
+    with db.get_conn() as conn:
+        inserted, repinned = field_log.seed(conn)
+    log.info("field log: %d observation(s) added, %d re-pinned to buoy readings",
+             inserted, repinned)
     scheduler = AsyncIOScheduler()
     scheduler.add_job(poll_buoy, "interval", minutes=30, id="cdip_poll")
     scheduler.start()
@@ -60,6 +64,24 @@ def _minutes_ago(iso_ts):
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=timezone.utc)
     return round((datetime.now(timezone.utc) - ts).total_seconds() / 60)
+
+
+def _with_swell_context(conn, observation):
+    """Attach the swell trains that were running around an observation.
+
+    The single buoy reading nearest an observation can easily be the wrong one:
+    on a mixed day the reported peak alternates between trains every half hour,
+    so the nearest reading may describe a windswell that had nothing to do with
+    what the observer was looking at. Summarising a window either side gives the
+    honest picture.
+    """
+    row = dict(observation)
+    center = row.get("buoy_observed_at_utc")
+    if center is None:
+        row["swell_trains"] = []
+        return row
+    row["swell_trains"] = rules.partition_readings(db.readings_around(conn, center))
+    return row
 
 
 def _build_dashboard_context(conn):
@@ -107,7 +129,9 @@ def spot_detail(request: Request, slug: str):
         if not spot:
             return RedirectResponse(url="/")
         spot_rules = db.rules_for_spot(conn, spot["id"])
-        observations = db.observations_for_spot(conn, spot["id"])
+        observations = [
+            _with_swell_context(conn, o) for o in db.observations_for_spot(conn, spot["id"])
+        ]
         latest = db.latest_buoy_reading(conn)
         call = None
         if latest:

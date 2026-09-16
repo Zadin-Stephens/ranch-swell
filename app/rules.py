@@ -1,6 +1,7 @@
 """Swell classification and per-spot prediction engine."""
 
 from dataclasses import dataclass
+from statistics import median
 
 NW_WINDOW = (260, 330)
 S_WINDOW = (160, 230)
@@ -22,6 +23,53 @@ def classify_swell(dp_deg: float) -> str:
     if S_WINDOW[0] <= dp_deg <= S_WINDOW[1]:
         return "S"
     return "unclear"
+
+
+@dataclass
+class SwellTrain:
+    """One swell train seen across a window of buoy readings."""
+    swell_type: str
+    n: int
+    share: float       # fraction of readings in the window this train owned
+    hs_ft: float
+    tp_s: float
+    dp_deg: float
+
+    def summary(self) -> str:
+        return (
+            f"{self.swell_type} {self.hs_ft:.1f}ft {self.tp_s:.1f}s {self.dp_deg:.0f}deg"
+        )
+
+
+def partition_readings(readings) -> list[SwellTrain]:
+    """Separate a window of readings into the distinct swell trains present.
+
+    The buoy reports a single peak direction and period per reading. When two
+    trains of comparable energy overlap, that peak alternates between them, so
+    consecutive readings disagree wildly about what the ocean is doing. Grouping
+    a window by direction window and taking the median of each group recovers
+    both trains instead of forcing a single misleading label.
+    """
+    usable = [r for r in readings if classify_swell(r["dp_deg"]) != "unclear"]
+    if not usable:
+        return []
+
+    trains = []
+    for label in ("S", "NW"):
+        members = [r for r in usable if classify_swell(r["dp_deg"]) == label]
+        if not members:
+            continue
+        trains.append(
+            SwellTrain(
+                swell_type=label,
+                n=len(members),
+                share=len(members) / len(usable),
+                hs_ft=median(r["hs_ft"] for r in members),
+                tp_s=median(r["tp_s"] for r in members),
+                dp_deg=median(r["dp_deg"] for r in members),
+            )
+        )
+    return sorted(trains, key=lambda t: t.n, reverse=True)
 
 
 @dataclass

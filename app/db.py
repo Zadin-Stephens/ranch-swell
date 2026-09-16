@@ -46,8 +46,12 @@ CREATE TABLE IF NOT EXISTS observations (
     observed_height_ft REAL NOT NULL,
     note TEXT,
     nearest_buoy_reading_id INTEGER REFERENCES buoy_readings(id),
-    created_at TEXT NOT NULL
+    created_at TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'ui'
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS observations_unique
+    ON observations (spot_id, observed_at_local, source);
 """
 
 
@@ -66,7 +70,28 @@ def get_conn():
 
 def init_db():
     with get_conn() as conn:
+        _migrate(conn)
         conn.executescript(SCHEMA)
+
+
+def _migrate(conn):
+    """Bring a pre-existing database up to the current schema.
+
+    Runs before the CREATE statements so the unique index below can be built on
+    a table that already has the column it indexes.
+    """
+    tables = {
+        r["name"]
+        for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")
+    }
+    if "observations" not in tables:
+        return  # fresh database; SCHEMA creates it correctly
+
+    columns = {r["name"] for r in conn.execute("PRAGMA table_info(observations)")}
+    if "source" not in columns:
+        conn.execute(
+            "ALTER TABLE observations ADD COLUMN source TEXT NOT NULL DEFAULT 'ui'"
+        )
 
 
 def latest_buoy_reading(conn):
@@ -105,6 +130,21 @@ def nearest_buoy_reading_to(conn, observed_at_local_utc):
            LIMIT 1""",
         (observed_at_local_utc,),
     ).fetchone()
+
+
+def readings_around(conn, center_utc, hours=3):
+    """Every buoy reading within `hours` either side of a moment in time.
+
+    A single reading reports only whichever swell train happened to own the
+    spectral peak at that instant, which on a mixed day flips back and forth.
+    A window of them shows what was actually in the water.
+    """
+    return conn.execute(
+        """SELECT * FROM buoy_readings
+           WHERE ABS(strftime('%s', observed_at_utc) - strftime('%s', ?)) <= ?
+           ORDER BY observed_at_utc""",
+        (center_utc, hours * 3600),
+    ).fetchall()
 
 
 def insert_observation(conn, spot_id, observed_at_local, observed_height_ft, note, nearest_buoy_reading_id, created_at):

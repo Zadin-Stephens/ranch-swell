@@ -368,6 +368,41 @@ th {
 .confidence-tbd { color: var(--poor); font-weight: 700; }
 .confidence-confirmed { color: var(--good); font-weight: 700; }
 
+.src-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--purple);
+  background: var(--purple-soft);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  vertical-align: middle;
+}
+
+.train {
+  display: block;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  line-height: 1.7;
+}
+.train strong {
+  display: inline-block;
+  min-width: 2.1em;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.train-s strong { color: var(--purple); }
+.train-nw strong { color: #cf8a4a; }
+
+/* Tables carry the most columns on the narrowest screens -- let them scroll
+   inside their own box rather than forcing the page sideways. */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-scroll table { min-width: 30rem; }
+
 .rule-note { font-size: 0.82rem; color: var(--text-dim); margin: 0.5rem 0; }
 
 .observe-form {

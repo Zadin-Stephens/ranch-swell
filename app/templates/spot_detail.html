@@ -18,6 +18,7 @@
 
 <h2>Rules on file</h2>
 {% if rules %}
+  <div class="table-scroll">
   <table class="rules-table">
     <thead>
       <tr><th>Swell</th><th>Direction</th><th>Period</th><th>Height</th><th>Tide</th><th>Confidence</th></tr>
@@ -41,6 +42,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
   {% for r in rules %}
     {% if r["notes"] %}<p class="rule-note"><strong>{{ r["swell_type"] }}:</strong> {{ r["notes"] }}</p>{% endif %}
   {% endfor %}
@@ -67,17 +69,28 @@
 
 <h2>Observation history</h2>
 {% if observations %}
+  <div class="table-scroll">
   <table class="obs-table">
     <thead>
-      <tr><th>When</th><th>Height</th><th>Buoy Hs / Tp / Dp</th><th>Note</th></tr>
+      <tr><th>When</th><th>Height</th><th>Swell in the water</th><th>Note</th></tr>
     </thead>
     <tbody>
       {% for o in observations %}
         <tr>
-          <td>{{ o["observed_at_local"] }}</td>
-          <td>{{ o["observed_height_ft"] }} ft</td>
           <td>
-            {% if o["hs_ft"] is not none %}
+            {{ o["observed_at_local"].replace("T", " ") }}
+            {% if o["source"] == "field_log" %}<span class="src-badge" title="Recorded in the field, kept in version control">field</span>{% endif %}
+          </td>
+          <td>{% if o["observed_height_ft"] == 0 %}flat{% else %}{{ o["observed_height_ft"] }} ft{% endif %}</td>
+          <td>
+            {% if o["swell_trains"] %}
+              {% for t in o["swell_trains"] %}
+                <span class="train train-{{ t.swell_type|lower }}">
+                  <strong>{{ t.swell_type }}</strong>
+                  {{ "%.1f"|format(t.hs_ft) }}ft &middot; {{ "%.1f"|format(t.tp_s) }}s &middot; {{ "%.0f"|format(t.dp_deg) }}&deg;
+                </span>
+              {% endfor %}
+            {% elif o["hs_ft"] is not none %}
               {{ "%.1f"|format(o["hs_ft"]) }}ft / {{ "%.0f"|format(o["tp_s"]) }}s / {{ "%.0f"|format(o["dp_deg"]) }}&deg;
             {% else %}&mdash;{% endif %}
           </td>
@@ -86,6 +99,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 {% else %}
   <p class="spot-notes">No observations logged yet for this spot.</p>
 {% endif %}
